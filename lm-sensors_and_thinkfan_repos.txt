@@ -1,0 +1,2 @@
+https://github.com/vmatare/thinkfan
+https://github.com/lm-sensors/lm-sensors
