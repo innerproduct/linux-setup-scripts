@@ -154,6 +154,7 @@ unthrottle
 # Main loop
 while true; do
 	get_temp # Gets the current temperature and set it to the variable TEMP.
+	get_idle # Gets the current idleness of CPUs and sets it to the variable IDLEPC
 	if   [ $TEMP -gt $MAX_TEMP ]; then # Throttle if too hot.
 		throttle
 	elif [ $IDLEPC -gt $IDLE_TARGET ]; then # Throttle if too idle
