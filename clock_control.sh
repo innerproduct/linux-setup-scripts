@@ -30,7 +30,7 @@ err_exit () {
 if [ $# -ne 2 ]; then
 	# If temperature and idle-percentage wasn't given, then print a message and exit.
 	echo "Please supply a maximum desired temperature in Celsius and a target CPU idle percentage." 1>&2
-	echo "For example:  ${0} 60 50" 1>&2
+	echo "For example:  ${0} 50 80" 1>&2
 	exit 2
 else
 	#Set the first argument as the maximum desired temperature.
