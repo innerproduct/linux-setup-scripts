@@ -36,6 +36,7 @@ else
 	#Set the first argument as the maximum desired temperature.
 	MAX_TEMP=$1
 	IDLE_TARGET=$2
+	IDLEPC=$2 # just an initial value in case the random check below fails to run
 fi
 
 
@@ -147,8 +148,9 @@ get_temp () {
 
 get_idle () {
 	# Get the smallest idle percentage among all CPU cores
-	
 	#IDLEPC=$(mpstat -P ALL --dec=0 5 1 | grep all|awk '{print $NF}'|grep [0-9+]|sort -g|head -1)
+	
+	# Get the average idle percentage of all  CPU cores
 	IDLEPC=$(mpstat -P ALL --dec=0 5 1 | grep all|awk '{print $NF}'|head -1)
 }
 ### END define script functions.
@@ -160,13 +162,14 @@ unthrottle
 # Main loop
 while true; do
 	get_temp # Gets the current temperature and set it to the variable TEMP.
-	if   [ $(($RANDOM % 3 == 0)) ]; then
+	# check how idle the CPU cores are, once in a while
+	if   [ $(($RANDOM % 5 == 0)) ]; then
 		get_idle # Gets the current idleness of CPUs and sets it to the variable IDLEPC
 	fi
 	if   [ $TEMP -gt $MAX_TEMP ]; then # Throttle if too hot.
 		echo -e "\t temp: ${RED}$TEMP${NC} , idle: $IDLEPC" 
 		throttle
-		throttle
+		throttle # a bit more aggressive when throttling because of temperature
 	elif [ $IDLEPC -gt $IDLE_TARGET ]; then # Throttle if too idle
 		echo -e "\t temp: $TEMP , idle: ${RED}$IDLEPC${NC}" 
 		throttle
