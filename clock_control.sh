@@ -42,11 +42,16 @@ fi
 ### START Initialize Global variables.
 
 # The frequency will increase when low temperature is reached.
+# And when the busiest CPU is less idle than target
 LOW_TEMP=$((MAX_TEMP - 5))
-
+LOW_IDLE=$((IDLE_TARGET - 10))
 CORES=$(nproc) # Get number of CPU cores.
 echo -e "Number of CPU cores detected: $CORES\n"
 CORES=$((CORES - 1)) # Subtract 1 from $CORES for easier counting later.
+# ANSI colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
 
 # Temperatures internally are calculated to the thousandth.
 MAX_TEMP=${MAX_TEMP}000
@@ -143,7 +148,8 @@ get_temp () {
 get_idle () {
 	# Get the smallest idle percentage among all CPU cores
 	
-	IDLEPC=$(mpstat -P ALL | awk '{print $NF}'|tail -8|awk 'BEGIN{a=1000}{if ($1<0+a) a=$1} END{print int(a)}')
+	#IDLEPC=$(mpstat -P ALL --dec=0 5 1 | grep all|awk '{print $NF}'|grep [0-9+]|sort -g|head -1)
+	IDLEPC=$(mpstat -P ALL --dec=0 5 1 | grep all|awk '{print $NF}'|head -1)
 }
 ### END define script functions.
 
@@ -154,14 +160,23 @@ unthrottle
 # Main loop
 while true; do
 	get_temp # Gets the current temperature and set it to the variable TEMP.
-	get_idle # Gets the current idleness of CPUs and sets it to the variable IDLEPC
+	if   [ $(($RANDOM % 3 == 0)) ]; then
+		get_idle # Gets the current idleness of CPUs and sets it to the variable IDLEPC
+	fi
 	if   [ $TEMP -gt $MAX_TEMP ]; then # Throttle if too hot.
+		echo -e "\t temp: ${RED}$TEMP${NC} , idle: $IDLEPC" 
+		throttle
 		throttle
 	elif [ $IDLEPC -gt $IDLE_TARGET ]; then # Throttle if too idle
+		echo -e "\t temp: $TEMP , idle: ${RED}$IDLEPC${NC}" 
 		throttle
-	elif [ $TEMP -le $LOW_TEMP ]; then # Unthrottle if cool.
+	elif [ $TEMP -le $LOW_TEMP -a $IDLEPC -le $LOW_IDLE ]; then # Unthrottle if cool and not so idle
+		echo -e "\t temp: ${GREEN}$TEMP${NC} , idle: ${GREEN}$IDLEPC${NC}" 
 		unthrottle
+	else
+		echo -e "\t temp: $TEMP , idle: $IDLEPC"
+		echo "nothing to do"
 	fi
-	sleep 3 # The amount of time between checking temperatures.
+	sleep 2 # The amount of time between checking temperatures and idleness.
 done
 
