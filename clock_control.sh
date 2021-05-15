@@ -8,6 +8,8 @@ cat << EOF
 Author: Sepero 2016 (sepero 111 @ gmx . com)
 URL: http://github.com/Sepero/temp-throttle/
 
+modified by AT to incorporate CPU idle percentage into throttling logic
+
 EOF
 
 # Additional Links
@@ -25,14 +27,15 @@ err_exit () {
 	exit 128
 }
 
-if [ $# -ne 1 ]; then
-	# If temperature wasn't given, then print a message and exit.
-	echo "Please supply a maximum desired temperature in Celsius." 1>&2
-	echo "For example:  ${0} 60" 1>&2
+if [ $# -ne 2 ]; then
+	# If temperature and idle-percentage wasn't given, then print a message and exit.
+	echo "Please supply a maximum desired temperature in Celsius and a target CPU idle percentage." 1>&2
+	echo "For example:  ${0} 60 50" 1>&2
 	exit 2
 else
 	#Set the first argument as the maximum desired temperature.
 	MAX_TEMP=$1
+	IDLE_TARGET=$2
 fi
 
 
@@ -137,6 +140,11 @@ get_temp () {
 	TEMP=$(cat $TEMPERATURE_FILES 2>/dev/null | xargs -n1 | sort -g -r | head -1)
 }
 
+get_idle () {
+	# Get the smallest idle percentage among all CPU cores
+	
+	IDLEPC=$(mpstat -P ALL | awk '{print $NF}'|tail -8|awk 'BEGIN{a=1000}{if ($1<0+a) a=$1} END{print a}')
+}
 ### END define script functions.
 
 echo "Initialize to max CPU frequency"
@@ -147,6 +155,8 @@ unthrottle
 while true; do
 	get_temp # Gets the current temperature and set it to the variable TEMP.
 	if   [ $TEMP -gt $MAX_TEMP ]; then # Throttle if too hot.
+		throttle
+	elif [ $IDLEPC -gt $IDLE_TARGET ]; then # Throttle if too idle
 		throttle
 	elif [ $TEMP -le $LOW_TEMP ]; then # Unthrottle if cool.
 		unthrottle
