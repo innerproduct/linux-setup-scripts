@@ -143,7 +143,7 @@ get_temp () {
 get_idle () {
 	# Get the smallest idle percentage among all CPU cores
 	
-	IDLEPC=$(mpstat -P ALL | awk '{print $NF}'|tail -8|awk 'BEGIN{a=1000}{if ($1<0+a) a=$1} END{print a}')
+	IDLEPC=$(mpstat -P ALL | awk '{print $NF}'|tail -8|awk 'BEGIN{a=1000}{if ($1<0+a) a=$1} END{print int(a)}')
 }
 ### END define script functions.
 
